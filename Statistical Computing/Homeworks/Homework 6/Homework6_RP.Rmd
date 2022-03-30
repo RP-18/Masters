@@ -1,0 +1,170 @@
+---
+title: "Homework 6"
+date: 10/14/21
+output: pdf_document
+---
+
+# Question 1
+Compute a Monte Carlo estimate $\hat \theta$ of $$\theta = \int_0^{0.5} e^{-x} dx$$ by sampling from Uniform(0, 0.5). Find another Monte Carlo estimator $\theta$* by sampling from the exponential distribution. Use simulations to estimate the variance of $\hat \theta$ and $\hat \theta$*, which estimator has smaller variance?
+
+``` {r echo=T}
+
+g1 <- function(x){
+  exp(-x)*I(x>=0)*I(x<=0.5)
+}
+n1 <- 10000
+
+#Sampling from Uniform (0,0.5)
+u1 <- runif(n1, 0, 0.5)
+gx1 <- g1(u1)
+theta.hat1 <- 0.5*mean(gx1)
+
+#Sampling from Exponential
+e1 <- rexp(n1)
+fgx1 <- g1(e1)/exp(-e1)
+theta.star1 <- mean(fgx1)
+
+#Simulations for Variance
+theta1_1 <- integer(n1)
+theta1_2 <- integer(n1)
+for(i in 1:n1){
+  U <- runif(n1, 0, 0.5)
+  Y1_1 <- g1(U)
+  theta1_1[i] <- mean(Y1_1)*0.5
+  
+  E <- rexp(n1)
+  Y1_2 <- g1(E)/exp(-E)
+  theta1_2[i] <- mean(Y1_2)
+}
+
+v1_1 <- var(theta1_1)
+v1_2 <- var(theta1_2)
+
+```
+
+-Ans  
+
+|$\hat{\theta}$|$\theta$* |Var($\hat{\theta}$)|Var($\theta$*)|  
+|:-----:|:-----:|:-----:|:-----:|  
+|`r theta.hat1`|`r theta.star1`|`r v1_1`|`r v1_2`|  
+
+The variance for $\hat{\theta}$ is smaller than the variance for $\theta$*. 
+
+
+
+
+
+
+
+# Question 2
+Use a Monte Carlo simulation to estimate $$\theta = \int_0^{1} e^{x} dx$$ by the antithetic variate approach and by the simple Monte Carlo method. Compute an empirical estimate of the percent reduction in variance using the antithetic variate.
+
+``` {r echo=T}
+n2 <- 10000
+theta2_1 <- integer(n2)
+theta2_2 <- integer(n2)
+for (i in 1:n2){
+  #Basic MC method
+  U1 <- runif(n2)
+  theta2_1[i] <- mean(exp(U1))
+  
+  #Antithetic method
+  U2 <- runif(n2/2)
+  Y1 <- exp(U2)
+  Y2 <- exp(1-U2)
+  theta2_2[i] <- mean((Y1+Y2)/2)
+}
+
+```
+
+-Ans  
+
+|Estimate|MC Method|Antithetic Method| 
+|:-----:|:-----:|:-----:|
+|$\hat{\theta}$|`r mean(theta2_1)`|`r mean(theta2_2)`|  
+|$Var(\hat{\theta})$|`r var(theta2_1)`|`r var(theta2_2)`|  
+
+
+Percent reduction in Variance is `r (var(theta2_1)-var(theta2_2))/var(theta2_1)*100`%.
+
+
+
+
+
+# Question 3 - 6.10
+Use Monte Carlo integration with antithetic variables to estimate $$\int_0^{1} \frac {e^{-x}}{1+x^2} dx$$ and find the approximate reduction in variance as a percentage of the variance without variance reduction.
+
+``` {r echo=T}
+n3 <- 10000
+theta3 <- numeric(n3)
+for (i in 1:n3){
+  #Antithetic method
+  U3 <- runif(n3/2)
+  Y1 <- exp(-U3)/(1+U3^2)
+  Y2 <- exp(-(1-U3)/(1+(1-U3)^2))
+  theta3[i] <- mean((Y1+Y2)/2)
+}
+```
+
+Approximate percent reduction in Variance is `r (var(theta3)-mean((theta3-mean(theta3))^2)/n3)/var(theta3)*100`%.
+
+
+
+
+# Quesiton 4 - 6.13
+Find two importance functions $f_1$ and $f_2$ that are supported on (1, $\infty$)
+and are “close” to $$g(x) =  \frac {x^2}{\sqrt {2 \pi}} e^{-x^2/2}, \qquad x>1$$
+
+Which of your two importance functions should produce the smaller variance in estimating $$\int_{1}^ \infty \frac {x^2}{\sqrt {2 \pi}} e^{-x^2/2}dx$$ by importance sampling? Explain.
+
+``` {r echo=T}
+gx4 <- function(x){
+  ((x^2)/sqrt(2*pi))*exp(-(x^2)/2)*I(x>=1)
+}
+
+#Importance function 1
+f4_1 <- function(x){
+  exp(-x)
+}
+
+#Importance function 2
+f4_2 <- function(x){
+  1/x^2
+}
+```
+
+```{r}
+curve(((x^2)/sqrt(2*pi))*exp(-(x^2)/2)*I(x>=1), col='blue4', xlim=c(1,10), ylab="f(x)")
+curve(exp(-x), add=T, col='red4', xlim=c(1,10))
+curve(dgamma(x,2,1), add=T, col='green4', xlim=c(1,10))
+```
+
+```{r echo=T}
+n4 <- 10000
+theta.hat4 <- numeric(2)
+se4 <- numeric(2)
+
+#Using f1
+x4_1 <- rexp(n4) 
+fg4_1 <- gx4(x4_1)/f4_1(x4_1)
+theta.hat4[1] <- mean(fg4_1)
+se4[1] <- sd(fg4_1)
+
+#Using f2
+x4_2 <- rgamma(n4, 2, 1)
+fg4_2 <- gx4(x4_2)/dgamma(x4_2, 2,1)
+theta.hat4[2] <- mean(fg4_2)
+se4[2] <- sd(fg4_2)
+
+
+rbind(theta.hat4,se4/sqrt(n4))
+
+```
+-Ans  
+The $f_2 = Gamma(2,1)$ has a smaller variance. It is "closer" than $f_1$, therefore achieves a smaller variance. 
+
+
+
+
+
+
