@@ -1,0 +1,209 @@
+---
+title: "Project 2"
+author: "Rodrigo Petricioli / Andrew Kelly"
+date: "11/23/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(bootstrap)
+library(boot)
+```
+
+
+# Introduction
+
+The main objective of this project to conduct a Monte Carlo study to estimate the coverage probabilities of the standard normal bootstrap confidence interval, the basic bootstrap confidence interval, and the percentile bootstrap confidence interval.
+
+(a). Generate random sample of size $20$, $x_1, . . . , x_{20}$, from the standard normal distribution. Check the empirical coverage rates for the $95$% standard normal bootstrap confidence interval, the $95$% basic bootstrap confidence interval, and the $95$% percentile confidence interval of sample mean.
+Note: the population mean ($\theta=0$), and the statistic $\hat{\theta}$ is the sample mean $\bar{x}$.
+
+(b). Find the proportions of times that the confidence intervals miss on the left, and the proportion of times that the confidence intervals miss on the right.
+
+
+# Definitions
+
+**Standard Normal Bootstrap Confidence Interval:** The standard normal bootstrap confidence interval is the simplest approach, but not necessarily the best. Suppose that $\hat{\theta}$ is an estimator of parameter $\theta$, and assume the standard error of the estimator is $se(\hat{\theta})$. If $\hat{\theta}$ is a sample mean and the sample size is large, then the Central Limit Theorem implies that $$Z=\frac{\hat{\theta} - E[\hat{\theta}]}{se(\hat{\theta})}$$ is approximately standard normal. Hence, if $\hat{\theta}$ is unbiased for $\theta$, then an approximate $100(1 - \alpha)$% confidence interval for $\theta$ is the $Z$-interval $$\hat{\theta} \pm z_{\alpha/2}se(\hat{\theta})$$ where $z_{\alpha/2}=\Phi^{-1}(1-\alpha/2)$. 
+This interval is easy to compute, but we have made several assumptions. To apply the normal distribution, we assume that the distribution of $\hat{\theta}$ is normal or $\hat{\theta}$ is a sample mean and the sample size is large. We have also implicitly assumed that $\hat{\theta}$ is unbiased for $\theta$. 
+
+**Basic Bootstrap Confidence Interval:** The basic bootstrap confidence interval or pivotal CI transforms the distribution of the replicates by subtracting the observed statistic. The quantiles of the transformed sample $\hat{\theta}^* - \hat{\theta}$ are used to determine the confidence limits.
+The $100(1 - \alpha)$% confidence limits for the basic bootstrap confidence interval are $$(2\hat{\theta}-\hat{\theta}^*_{1-\alpha/2}\ ,\ 2\hat{\theta}-\hat{\theta}^*_{\alpha/2}),$$ where $\hat{\theta}^*_\alpha$ denotes the $\alpha$ sample quantile of the bootstrap replicates $\hat{\theta}^*$.  
+
+**Percentile Bootstrap Confidence Interval:** A bootstrap percentile interval uses the empirical distribution of the bootstrap replicates as the reference distribution. The quantiles of the empirical distribution are estimators of the quantiles of the sampling distribution of $\hat{\theta}$, so that these (random) quantiles may match the true distribution better when the distribution of $\hat{\theta}$ is not normal. Suppose that $\hat{\theta}^{(1)}, . . . , \hat{\theta}^{(B)}$ are the bootstrap replicates of the statistic $\hat{\theta}$. From the ecdf of the replicates, compute the $\alpha/2$ quantile $\hat{\theta}_{\alpha/2}$, and the $1-\alpha/2$ quantile $\hat{\theta}_{1-\alpha/2}$.
+
+
+
+
+# Monte Carlo Study
+
+First, we generated a random sample, x, of size 20 from the standard normal distribution. We then set up our bootstrap models, boot and boot_ci, as well as a function for easily computing the mean. We also had to initialize all of our count variables for the different intervals we were working with. The simulation then proceeds to loop 2000 times where the count variables are incremented appropriately in each iteration. The count variables are incremented based on a comparison between the mean of 20 samples from x and the corresponding value for their respective interval types. For the general coverage counts, the variables are incremented regardless of which side is covered. For the left and right coverage, the counts are only updated when the coverage is on their respective side.
+
+
+
+
+```{r echo=F}
+#Set Seed for identical reproduction.
+set.seed(112321)
+
+#Assumptions
+n <- 20
+x <- rnorm(n)
+R <- 2000
+
+#Setup Mean Function
+f <- function(x,i){
+  sum(x[i])/length(x[i])
+}
+
+#Bootstrap Modeling
+boot <- boot(x, statistic = f, R)
+boot_ci <- boot.ci(boot, type=c("norm", "basic", "perc"))
+
+#Empirical Coverage Rates Setup
+theta_hat <- numeric(R)
+count_n <- 0; l_count_n <- 0; r_count_n <- 0
+count_b <- 0; l_count_b <- 0; r_count_b <- 0
+count_p <- 0; l_count_p <- 0; r_count_p <- 0
+
+#Empirical Coverage Rates Calculations
+for (i in 1:R){
+  samp <- sample(x, size=n, replace=T)
+  theta_hat[i] <- mean(samp) 
+  #Count General Coverage
+  if (theta_hat[i] < boot_ci$normal[2] | theta_hat[i] > boot_ci$normal[3]) count_n <- count_n + 1
+  if (theta_hat[i] < boot_ci$basic[4] | theta_hat[i] > boot_ci$basic[5]) count_b <- count_b + 1
+  if (theta_hat[i] < boot_ci$percent[4] | theta_hat[i] > boot_ci$percent[5]) count_p <- count_p + 1
+  
+  #Count Left Coverage
+  if (theta_hat[i] < boot_ci$normal[2]) l_count_n <- l_count_n + 1
+  if (theta_hat[i] < boot_ci$basic[4]) l_count_b <- l_count_b + 1
+  if (theta_hat[i] < boot_ci$percent[4]) l_count_p <- l_count_p + 1
+  
+  #Count Right Coverage
+  if (theta_hat[i] > boot_ci$normal[3]) r_count_n <- r_count_n + 1
+  if (theta_hat[i] > boot_ci$basic[5]) r_count_b <- r_count_b + 1
+  if (theta_hat[i] > boot_ci$percent[5]) r_count_p <- r_count_p + 1
+}
+
+emp_n <- 1 - count_n/R; l_emp_n <- 1 - l_count_n/R; r_emp_n <- 1 - r_count_n/R
+emp_b <- 1 - count_b/R; l_emp_b <- 1 - l_count_b/R; r_emp_b <- 1 - r_count_b/R 
+emp_p <- 1 - count_p/R; l_emp_p <- 1 - l_count_p/R; r_emp_p <- 1 - r_count_p/R
+
+```
+
+
+
+# Results 
+
+Here are the confidence intervals for the three different methods with a significance level of $95$%. 
+
+
+| Bootstrap Method | Lower Bound                    | Upper Bound                    |
+|:-----------------|:------------------------------:|:------------------------------:|
+| Standard Normal  | `r round(boot_ci$normal[2],4)` | `r round(boot_ci$normal[3],4)` |
+| Basic            | `r round(boot_ci$basic[4],4)`  | `r round(boot_ci$basic[5],4)`  |
+| Percentile       | `r round(boot_ci$percent[4],4)`| `r round(boot_ci$percent[5],4)`|
+
+
+The above table shows the upper and lower bounds for the three bootstrap methods. We see that the basic method has the widest lower bound and the standard normal method has the narrowest lower bound. We also see that the percentile method has the widest upper bound, and the standard normal method again has the narrowest upper bound. 
+\newline
+
+The empirical coverage rates for each of the methods: 
+
+| Bootstrap Method | Empirical Coverage Rate  | Left Coverage             | Right Coverage            |
+|:-----------------|:------------------------:|:-------------------------:|:-------------------------:|
+| Standard Normal  | `r round(emp_n*100,2)`%  | `r round(l_emp_n*100,2)`% | `r round(r_emp_n*100,2)`% |
+| Basic            | `r round(emp_b*100,2)`%  | `r round(l_emp_b*100,2)`% | `r round(r_emp_b*100,2)`% |
+| Percentile       | `r round(emp_p*100,2)`%  | `r round(l_emp_p*100,2)`% | `r round(r_emp_p*100,2)`% |
+
+
+The above table ranks the three methods ranked from widest to narrowest coverage in the following order: basic, percentile, standard normal. We also see that the basic and percentile methods are only varying by .05%, while standard normal is .5% away from basic. If we look at the calculated left and right coverages for the methods, we can determine the proportion of misses for each side. We see that the standard normal method misses on the left 1.95% of the time and misses on the right 2.2% of the time. This is more misses than the percentile method which has 1.75% on the left and 1.95% on the right. This is also more misses than the basic method which only misses 1.7% on the left and 1.95% on the right. 
+
+This leads us to believe that while the three methods are all relatively close in performance, the basic bootstrap confidence interval is the best, with the percentile confidence interval in a close second, and the standard normal bootstrap interval not too far behind in third. Your choice between basic and percentile could be influenced by whether you are concerned more with the upper or lower bound. The basic method is stronger from the lower bound while the percentile method is stronger from the upper bound.
+
+
+
+\newpage
+# Appendix 1 - R Code.
+
+```{r echo=T}
+#Set Seed for identical reproduction.
+set.seed(112321)
+
+#Assumptions
+n <- 20
+x <- rnorm(n)
+R <- 2000
+
+#Setup Mean Function
+f <- function(x,i){
+  sum(x[i])/length(x[i])
+}
+
+#Bootstrap Modeling
+boot <- boot(x, statistic = f, R)
+boot_ci <- boot.ci(boot, type=c("norm", "basic", "perc"))
+
+#Empirical Coverage Rates Setup
+theta_hat <- numeric(R)
+count_n <- 0; l_count_n <- 0; r_count_n <- 0
+count_b <- 0; l_count_b <- 0; r_count_b <- 0
+count_p <- 0; l_count_p <- 0; r_count_p <- 0
+
+#Empirical Coverage Rates Calculations
+for (i in 1:R){
+  samp <- sample(x, size=n, replace=T)
+  theta_hat[i] <- mean(samp) 
+  #Count General Coverage
+  if (theta_hat[i] < boot_ci$normal[2] | theta_hat[i] > boot_ci$normal[3]) count_n <- count_n + 1
+  if (theta_hat[i] < boot_ci$basic[4] | theta_hat[i] > boot_ci$basic[5]) count_b <- count_b + 1
+  if (theta_hat[i] < boot_ci$percent[4] | theta_hat[i] > boot_ci$percent[5]) count_p <- count_p + 1
+  
+  #Count Left Coverage
+  if (theta_hat[i] < boot_ci$normal[2]) l_count_n <- l_count_n + 1
+  if (theta_hat[i] < boot_ci$basic[4]) l_count_b <- l_count_b + 1
+  if (theta_hat[i] < boot_ci$percent[4]) l_count_p <- l_count_p + 1
+  
+  #Count Right Coverage
+  if (theta_hat[i] > boot_ci$normal[3]) r_count_n <- r_count_n + 1
+  if (theta_hat[i] > boot_ci$basic[5]) r_count_b <- r_count_b + 1
+  if (theta_hat[i] > boot_ci$percent[5]) r_count_p <- r_count_p + 1
+}
+
+emp_n <- 1 - count_n/R; l_emp_n <- 1 - l_count_n/R; r_emp_n <- 1 - r_count_n/R
+emp_b <- 1 - count_b/R; l_emp_b <- 1 - l_count_b/R; r_emp_b <- 1 - r_count_b/R 
+emp_p <- 1 - count_p/R; l_emp_p <- 1 - l_count_p/R; r_emp_p <- 1 - r_count_p/R
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
