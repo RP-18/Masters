@@ -1,0 +1,115 @@
+---
+title: "Homework 5"
+date: "10/8/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Question 1
+
+
+``` {r echo=T}
+n1 <- 10000
+u1 <- runif(n1)
+gx1<- exp((-u1^3)/3)/(1+u1^2)
+theta.hat1 <- mean(gx1)
+```
+-Ans. $\hat{\theta} =$ `r theta.hat1` vs. Actual Integral $= 0.73845...$.
+
+
+
+# Question 2 (Ex. 6.1)
+
+``` {r echo=T}
+n2 <- 10000
+u2 <- runif(n2, 0, pi/3)
+gx2<- sin(u2)
+theta.hat2 <- (pi/3)*mean(gx2)
+
+```
+-Ans. $\hat{\theta} =$ `r theta.hat2` vs. Actual Integral $= 0.5$.
+
+
+# Question 3 (Ex. 6.4)
+
+``` {r echo=T}
+#Beta(3,3)
+betasim <- function (n, alpha, beta, quantile){
+  u <- runif(n, 0, quantile)
+  gx <- (factorial(alpha+beta-1)/(factorial(alpha-1)*factorial(beta-1)))*(u^(alpha-1))*((1-u)^(beta-1))
+  return (mean(gx)*quantile)
+}
+```
+
+
+``` {r echo=T}
+n3 <- 10000
+alpha <- 3
+beta <- 3
+
+theta.hat3 <- numeric(9)
+for (i in 1:9){
+  theta.hat3[i] <- betasim(n3, alpha, beta, i/10)
+}
+
+p <- seq(.1, .9, .1)
+cdf3 <- pbeta(p, alpha, beta)
+round(rbind(p, cdf3, theta.hat3),3)
+```
+
+
+
+# Question 4
+
+``` {r echo=T}
+n4 <- 10000
+u4 <- runif(n4, 0, 0.8)
+gx4<- exp((-u4^2)/2)/(sqrt(2*pi))
+theta.hat4 <- 0.8*mean(gx4)
+
+r4 <- rnorm(n4)
+gr4<- exp((-r4^2)/2)/(sqrt(2*pi))
+theta.star4 <- mean(gr4)
+
+```
+-Ans.  
+
+|  $\hat{\theta}$  | $\theta*$ |  Actual Integral  |
+|:---:|:---:|:---:|
+|`r theta.hat4`|`r theta.star4`| 0.288145 |
+
+
+
+# Question 5
+
+``` {r echo=T}
+#Gamma(3,2)
+gammasim <- function (n, r, lambda, quantile){
+  u <- runif(n, 0, quantile)
+  gx <- ((lambda^r)/factorial(r-1))*(u^(r-1))*(exp(-lambda*u))
+  return (mean(gx)*quantile)
+}
+```
+
+
+``` {r echo=T}
+n5 <- 10000
+r <- 3
+lambda <- 2
+
+theta.hat5 <- numeric(9)
+for (i in 1:10){
+  theta.hat5[i] <- gammasim(n5, r, lambda, (i*2)/10)
+}
+
+p5 <- seq(.2, 2, .2)
+cdf5 <- pgamma(p5, r, lambda)
+round(rbind(p5, cdf5, theta.hat5),3)
+```
+
+
+
