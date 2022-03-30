@@ -1,0 +1,210 @@
+---
+title: "Project 1"
+author: "Rodrigo Petricioli"
+date: "11/04/2021"
+output: pdf_document
+---
+
+# Introdution
+
+The main objective of this project is to use Monte Carlo simulation to investigate whether the empirical $Type\ I$ error rate of the one sample $t-test$ is approximately equal to the nominal significance level $\alpha$, when the sampled population is non-normal. The $t-test$ is robust to mild departures from normality.
+
+We tested this for the cases when the sample is (i) $\chi^2(1)$, (ii) $Uniform(0, 2),$ and (iii) $Exponential(rate=1)$. 
+
+In each case, we tested $H_0$ : $\mu$ = $\mu_0$ vs $H_1$ : $\mu$ $\neq$ $\mu_0$, where $\mu_0$ is the mean of $\chi^2(1)$, $Uniform(0, 2),$ and $Exponential(1)$, respectively.
+
+
+
+# Definitions
+
+**Null hypothesis ($H_0$):** $\theta \in \theta_0$ the status quo or that nothing interesting is happening.
+
+**Alternative hypothesis($H_a$ or $H_1$):** $\theta \in \theta_1$ the claim for which we seek significance evidence.
+
+**One sample t-test:**  
+A t-test is used when the population parameters (mean and standard deviation) are not known. One sample t-test which tests the mean of a single group against a known mean. If the sample distribution is known we can compare the sample mean against the theoretical mean.
+
+**Empirical Type I Error:** A Type I error occurs if the null hypothesis is rejected when in fact the null hypothesis is true.
+The probability of Type I error is the conditional probability that the null hypothesis is rejected given that $H_0$ is true. Thus, if the test procedure is replicated a large number of times under the conditions of the null hypothesis, the observed Type I error rate should be at most (approximately) $\alpha$.
+
+An empirical Type I error rate can be computed by a Monte Carlo experiment. The test procedure is replicated a large number of times under the conditions of the null hypothesis. The empirical Type I error rate for the Monte Carlo experiment is the sample proportion of significant test statistics among the replicates.
+
+**Monte Carlo experiment to asses Type I error rate: **  
+
+1. For each replicate, indexed by $j = 1,...,m$:  
+
+    (a) Generate the $j^{th}$ random sample $x_1^{(j)} , . . . , x_n^{(j)}$ from the null distribution. 
+  
+    (b) Compute the test statistic $T_j$ from the $j^{th}$ sample.  
+  
+    (c) Record the test decision $I_j = 1$ if $H_0$ is rejected at significance level $\alpha$ and         otherwise $I_j = 0$.
+  
+2. Compute the proportion of significant tests $\frac{1}{m} \sum_{j=1}^m I_j$. This proportion is the observed Type I error rate.
+
+
+
+# Monte Carlo Simulation  
+
+First, I used the Monte Carlo Simulation for $10,000$ replicates of samples of size $20$ with significance level $\alpha = 0.05$ for the three different distributions. 
+
+With this, I performed a one sample t-test for each one and then recorded the sample mean, the p-value, and the test result $I_j$ ($1$ if $H_0$ was rejected, 0 otherwise). 
+
+The sample means to make sure that the observed mean of the $10,000$ replicates' sample means $\hat\mu \approx \mu$. Where $\mu$ is the theoretical mean of each distribution. 
+
+The p-value is then used to decide whether or not to accept or reject the null Hypothesis $H_0$. If $p-value < \alpha$, then we reject $H_0$, else we accept $H_0$. This means that if the p-value is small enough, we can say, with a certain degree of confidence, that the sample mean $\mu \neq 1$. 
+
+I then calculated the percentage of rejection of the null hypothesis $H_0$ by counting the number of replicates that rejected $H_0$ and dividing that number by the total number of replicates. 
+
+
+```{r echo=F}
+#Set Seed for identical reproduction.
+set.seed(110421)
+
+#Assumptions
+n <- 20 #sample size
+m <- 10000 #number of replicates for MC simulation
+alpha <- 0.05 #significance level
+mu0 <- 1 #theoretical mean of the three distributions
+
+#Empirical Type I Error Rate for Chisquare(1)
+df1 <- data.frame(matrix(ncol = 3, nrow = m)) 
+colnames(df1) <- c('Sample Mean', 'p-value', 'Rejects H0')
+for (j in 1:m){
+  x <- rchisq(n, 1)
+  df1[j,1] <- mean(x)
+  ttest <- t.test(x, alternative = "two.sided", mu=mu0, conf.level = 1-alpha)
+  df1[j,2] <- ttest$p.value
+  if (ttest$p.value < alpha) df1[j,3] = 1 else df1[j,3] = 0
+}
+p.hat1 <- sum(df1[,3])/m #percentage of rejection of H0
+mu.hat1 <- round(mean(df1[,1]),4) #mean of sample means
+
+#Empirical Type I Error Rate for Uniform(0,2)
+df2 <- data.frame(matrix(ncol = 3, nrow = m)) 
+colnames(df2) <- c('Sample Mean', 'p-value', 'Rejects H0')
+for (j in 1:m){
+  x <- runif(n, 0, 2)
+  df2[j,1] <- mean(x)
+  ttest <- t.test(x, alternative = "two.sided", mu=mu0, conf.level = 1-alpha)
+  df2[j,2] <- ttest$p.value
+  if (ttest$p.value < alpha) df2[j,3] = 1 else df2[j,3] = 0
+}
+p.hat2 <- sum(df2[,3])/m #percentage of rejection of H0
+mu.hat2 <- round(mean(df2[,1]),4) #mean of sample means
+
+#Empirical Type I Error Rate for Exponential(1)
+df3 <- data.frame(matrix(ncol = 3, nrow = m)) 
+colnames(df3) <- c('Sample Mean', 'p-value', 'Rejects H0')
+for (j in 1:m){
+  x <- rexp(n, 1)
+  df3[j,1] <- mean(x)
+  ttest <- t.test(x, alternative = "two.sided", mu=mu0, conf.level = 1-alpha)
+  df3[j,2] <- ttest$p.value
+  if (ttest$p.value < alpha) df3[j,3] = 1 else df3[j,3] = 0
+}
+p.hat3 <- sum(df3[,3])/m #percentage of rejection of H0
+mu.hat3 <- round(mean(df3[,1]),4) #mean of sample means
+```
+
+
+
+# Results 
+
+
+| Distribution     | $\hat\mu$    | Percentage of Rejection of $H_0$ |  
+|:----------------:|:------------:|:--------------------------------:|  
+| $\chi^2(1)$      | `r mu.hat1`  | `r round(p.hat1,4)*100`%         |  
+| $Uniform(0,2)$   | `r mu.hat2`  | `r round(p.hat2,4)*100`%         | 
+| $Exponential(1)$ | `r mu.hat3`  | `r round(p.hat3,4)*100`%         | 
+
+
+A t-test works best when sampling from a Normal distribution, however, this test is robust enough for distributions that deviate from it. The less they deviate, the better it works. 
+After performing the analysis, I found that the percentage rejection rate or the Empirical Type I error for the $Uniform(0,2)$ was the lowest, meaning that this specific test works better for this distribution in comparison to the $\chi^2(1)$ and the $Exponential(1)$. 
+
+By this analysis we can conclude that the t-test is a better fit for the $Uniform(0,2)$, then for the $Exponential(1)$, and finally for the $\chi^2(1)$. 
+The empirical Type I Error means that any sample assigned from each of these distributions has a `r round(p.hat1,4)*100`%, `r round(p.hat2,4)*100`% , and `r round(p.hat3,4)*100`% of being wrong, respectively.
+
+
+
+
+\newpage
+# Appendix 1 - R Code.
+
+```{r echo=T}
+#Set Seed for identical reproduction.
+set.seed(110421)
+
+#Assumptions
+n <- 20 #sample size
+m <- 10000 #number of replicates for MC simulation
+alpha <- 0.05 #significance level
+mu0 <- 1 #theoretical mean of the three distributions
+
+#Empirical Type I Error Rate for Chisquare(1)
+df1 <- data.frame(matrix(ncol = 3, nrow = m)) 
+colnames(df1) <- c('Sample Mean', 'p-value', 'Rejects H0')
+for (j in 1:m){
+  x <- rchisq(n, 1)
+  df1[j,1] <- mean(x)
+  ttest <- t.test(x, alternative = "two.sided", mu=mu0, conf.level = 1-alpha)
+  df1[j,2] <- ttest$p.value
+  if (ttest$p.value < alpha) df1[j,3] = 1 else df1[j,3] = 0
+}
+p.hat1 <- sum(df1[,3])/m #percentage of rejection of H0
+mu.hat1 <- round(mean(df1[,1]),4) #mean of sample means
+
+
+#Empirical Type I Error Rate for Uniform(0,2)
+df2 <- data.frame(matrix(ncol = 3, nrow = m)) 
+colnames(df2) <- c('Sample Mean', 'p-value', 'Rejects H0')
+for (j in 1:m){
+  x <- runif(n, 0, 2)
+  df2[j,1] <- mean(x)
+  ttest <- t.test(x, alternative = "two.sided", mu=mu0, conf.level = 1-alpha)
+  df2[j,2] <- ttest$p.value
+  if (ttest$p.value < alpha) df2[j,3] = 1 else df2[j,3] = 0
+}
+p.hat2 <- sum(df2[,3])/m #percentage of rejection of H0
+mu.hat2 <- round(mean(df2[,1]),4) #mean of sample means
+
+#Empirical Type I Error Rate for Exponential(1)
+df3 <- data.frame(matrix(ncol = 3, nrow = m)) 
+colnames(df3) <- c('Sample Mean', 'p-value', 'Rejects H0')
+for (j in 1:m){
+  x <- rexp(n, 1)
+  df3[j,1] <- mean(x)
+  ttest <- t.test(x, alternative = "two.sided", mu=mu0, conf.level = 1-alpha)
+  df3[j,2] <- ttest$p.value
+  if (ttest$p.value < alpha) df3[j,3] = 1 else df3[j,3] = 0
+}
+p.hat3 <- sum(df3[,3])/m #percentage of rejection of H0
+mu.hat3 <- round(mean(df3[,1]),4) #mean of sample means
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
